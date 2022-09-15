@@ -1,50 +1,21 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:fast_utils/fast_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:fast_mvvm/fast_mvvm.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+
+import '../fast_net.dart';
+import 'log.dart';
 
 typedef ApiInterceptorOnRequest = Future<RequestOptions> Function(
     RequestOptions options, String baseUrl);
 
 typedef RespDataJson = Function(RespData data, Map<String, dynamic> json);
 
-bool isVersion = false;
-String versionKey = "version";
-String? version;
+typedef ProcessingExtend = Map<String, dynamic> Function(
+    Map<String, dynamic>? json);
 
-Future<String> getAppVersion() async {
-  if (version != null) return version!;
-  PackageInfo packageInfo = await PackageInfo.fromPlatform();
-  version = packageInfo.version;
-  return version!;
-}
-
-void initFastDevelopOfApiInterceptor(
-    ApiInterceptorOnRequest? onRequest, bool? extraSaveJson) {
-  if (onRequest != null) _onRequest = onRequest;
-  if (extraSaveJson != null) ApiInterceptor.extraSaveJson = extraSaveJson;
-}
-
-/// 配置[headers] 等
-ApiInterceptorOnRequest _onRequest = (options, String baseUrl) async {
-  if (isVersion) {
-    var version = await getAppVersion();
-    options.headers.putIfAbsent(versionKey, () => "v$version");
-  }
-
-  if (BoolUtil.parse(options.extra[keyShowDialog])) {
-//      LogUtil.printLog("showDialog");
-    try {
-      DialogSimple.show(options.uri.toString());
-    } catch (e) {
-      printLog(e);
-    }
-  }
-  printLog(options.uri);
-  return options;
-};
+typedef ShowToast = Function(Object? msg);
 
 ///  API
 class ApiInterceptor extends InterceptorsWrapper {
@@ -61,26 +32,28 @@ class ApiInterceptor extends InterceptorsWrapper {
     RequestInterceptorHandler handler,
   ) async {
     options.baseUrl = baseUrl;
-    var o = await _onRequest(options, baseUrl);
+    var o = await Config.onRequest(options, baseUrl);
     super.onRequest(o, handler);
   }
 
   @override
   onResponse(Response response, ResponseInterceptorHandler handler) async {
-    bool dialog = BoolUtil.parse(response.requestOptions.extra[keyShowDialog]);
+    bool dialog =
+        BoolUtil.parse(response.requestOptions.extra[Config.keyShowDialog]);
     if (dialog) {
-      bool allClear =
-          BoolUtil.parse(response.requestOptions.extra[keyDialogAllClear]);
-      DialogSimple.close(response.requestOptions.uri.toString(),
+      bool allClear = BoolUtil.parse(
+          response.requestOptions.extra[Config.keyDialogAllClear]);
+      Config.closeLoading(response.requestOptions.uri.toString(),
           clear: allClear);
     }
 
     var disposeJson =
-        BoolUtil.parse(response.requestOptions.extra[keyDisposeJson]);
-    response.extra.update(keyDisposeJson, (v) => disposeJson,
+        BoolUtil.parse(response.requestOptions.extra[Config.keyParseJson]);
+    response.extra.update(Config.keyParseJson, (v) => disposeJson,
         ifAbsent: () => disposeJson);
     if (disposeJson) {
-      response.extra.update(keyResult, (v) => true, ifAbsent: () => true);
+      response.extra
+          .update(Config.keyResult, (v) => true, ifAbsent: () => true);
       return handler.resolve(response);
     } else {
       Map<String, dynamic> jsonData = {};
@@ -107,37 +80,38 @@ class ApiInterceptor extends InterceptorsWrapper {
 
       response.data = respData.data;
       if (extraSaveJson) {
-        response.extra.update(keyJson, (v) => respData.json,
+        response.extra.update(Config.keyJson, (v) => respData.json,
             ifAbsent: () => respData.json);
       }
-      response.extra.update(keyIsMore, (v) => respData.isMore,
+      response.extra.update(Config.keyIsMore, (v) => respData.isMore,
           ifAbsent: () => respData.isMore);
-      response.extra.update(keyTotalPage, (v) => respData.totalPageNum,
+      response.extra.update(Config.keyTotalPage, (v) => respData.totalPageNum,
           ifAbsent: () => respData.totalPageNum);
-      response.extra
-          .update(keyHint, (v) => respData.hint, ifAbsent: () => respData.hint);
-      response.extra.update(keyResult, (v) => respData.result,
+      response.extra.update(Config.keyHint, (v) => respData.hint,
+          ifAbsent: () => respData.hint);
+      response.extra.update(Config.keyResult, (v) => respData.result,
           ifAbsent: () => respData.result);
-      response.extra.update(keyExtendData, (v) => respData.getExtend(),
+      response.extra.update(Config.keyExtendData, (v) => respData.getExtend(),
           ifAbsent: () => respData.getExtend());
 
       if (!respData.result) {
         response.statusCode = respData.code;
         printLog('---api-response--->error---->$respData');
-        if (BoolUtil.parse(response.requestOptions.extra[keyShowError]) &&
-            respData.error.en) {
-          showToast(respData.error);
+        if (BoolUtil.parse(
+                response.requestOptions.extra[Config.keyShowError]) &&
+            respData.error.ne) {
+          Config.showToast(respData.error);
         }
 
         ///需要登录
-        if (respData.login.en && respData.login == "0") {
-          throw const UnAuthorizedException();
-        }
+        // if (respData.login.ne && respData.login == "0") {
+        //   throw const UnAuthorizedException();
+        // }
       }
 
-      if (BoolUtil.parse(response.requestOptions.extra[keyShowHint]) &&
-          respData.hint.en) {
-        showToast(respData.error);
+      if (BoolUtil.parse(response.requestOptions.extra[Config.keyShowHint]) &&
+          respData.hint.ne) {
+        Config.showToast(respData.error);
       }
       return handler.resolve(response);
     }
@@ -145,20 +119,11 @@ class ApiInterceptor extends InterceptorsWrapper {
 
   @override
   void onError(DioError err, ErrorInterceptorHandler handler) {
-    DialogSimple.close("", clear: true);
+    Config.closeLoading("", clear: true);
     printLog(err.toString());
     printLog('---api-response--->error---->$err');
     super.onError(err, handler);
   }
-}
-
-typedef ProcessingExtend = Map<String, dynamic> Function(
-    Map<String, dynamic>? json);
-
-void initFastDevelopOfRespData(
-    ProcessingExtend? processingExtend, RespDataJson? respDataJson) {
-  if (processingExtend != null) RespData.processingExtend = processingExtend;
-  if (respDataJson != null) RespData.responseJson = respDataJson;
 }
 
 class RespData {

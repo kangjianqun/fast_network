@@ -1,53 +1,26 @@
 import 'package:dio/dio.dart';
 import 'package:dio/native_imp.dart';
-import 'package:fast_mvvm/fast_mvvm.dart';
-import '../../fast_develop.dart';
+import 'package:fast_net/fast_net.dart';
+import 'package:fast_utils/fast_utils.dart';
 
-String keyShowDialog = "key_show_dialog";
-String keyDialogAllClear = "key_dialog_clear";
-String keyShowError = "key_show_error";
-String keyShowHint = "key_show_hint";
-String keyDisposeJson = "key_disponse_json";
-
-String keyIsMore = "key_isMore";
-String keyJson = "key_json";
-String keyExtendData = "key_extendData";
-String keyTotalPage = "key_totalPage";
-String keyHint = "key_hint";
-String keyResult = "key_result";
-
-bool postDataIsFromData = true;
+import 'log.dart';
 
 typedef DioInit = void Function(Dio dio, String baseUrl);
-JsonDecodeCallback? jsonDecodeCallback;
 
-/// [parseJson]必须是顶层函数
-void initFastDevelopOfHttp(
-  BaseOptions? baseOptions,
-  JsonDecodeCallback? parseJson,
-  DioInit? dioInit,
-) {
-  if (baseOptions != null) _baseOptions = baseOptions;
-  if (parseJson != null) jsonDecodeCallback = parseJson;
-}
+enum RequestType { get, post }
 
-BaseOptions _baseOptions =
-    BaseOptions(connectTimeout: 1000 * 60, receiveTimeout: 1000 * 60);
-
-/// 初始化 Dio
-DioInit _dioInit = (Dio dio, String baseUrl) {
-  dio.interceptors.add(ApiInterceptor(baseUrl));
-};
+typedef RequestSucceed = void Function(Response);
+typedef RequestFailure = void Function(DioError);
 
 class Http extends DioForNative {
   static Http? instance;
 
   factory Http(String baseUrl,
       {bool isInstance = true, BaseOptions? options, String? contentType}) {
-    var o = options ?? _baseOptions;
+    var o = options ?? Config.baseOptions;
     if (!isInstance) return Http._(o).._init(baseUrl);
     instance ??= Http._(o).._init(baseUrl);
-    if (contentType.en) instance!.options.contentType = contentType;
+    if (contentType.ne) instance!.options.contentType = contentType;
     return instance!;
   }
 
@@ -55,18 +28,13 @@ class Http extends DioForNative {
 
   /// 初始化 加入app通用处理
   _init(String baseUrl) {
-    if (jsonDecodeCallback != null) {
+    if (Config.jsonDecodeCallback != null) {
       (transformer as DefaultTransformer).jsonDecodeCallback =
-          jsonDecodeCallback;
+          Config.jsonDecodeCallback;
     }
-    _dioInit(this, baseUrl);
+    Config.dioInit(this, baseUrl);
   }
 }
-
-enum RequestType { get, post }
-
-typedef RequestSucceed = void Function(Response);
-typedef RequestFailure = void Function(DioError);
 
 Future<void> requestHttp(
   RequestType type,
@@ -84,15 +52,15 @@ Future<void> requestHttp(
   RequestFailure? failure,
 }) async {
   Response response;
-  dio.options.extra.update(keyShowDialog, (item) => isShowDialog,
+  dio.options.extra.update(Config.keyShowDialog, (item) => isShowDialog,
       ifAbsent: () => isShowDialog);
-  dio.options.extra.update(keyDialogAllClear, (item) => dialogAllClear,
+  dio.options.extra.update(Config.keyDialogAllClear, (item) => dialogAllClear,
       ifAbsent: () => dialogAllClear);
-  dio.options.extra
-      .update(keyShowError, (item) => isShowError, ifAbsent: () => isShowError);
-  dio.options.extra
-      .update(keyShowHint, (item) => isShowHint, ifAbsent: () => isShowHint);
-  dio.options.extra.update(keyDisposeJson, (item) => disposeJson,
+  dio.options.extra.update(Config.keyShowError, (item) => isShowError,
+      ifAbsent: () => isShowError);
+  dio.options.extra.update(Config.keyShowHint, (item) => isShowHint,
+      ifAbsent: () => isShowHint);
+  dio.options.extra.update(Config.keyParseJson, (item) => disposeJson,
       ifAbsent: () => disposeJson);
   try {
     switch (type) {
@@ -100,7 +68,7 @@ Future<void> requestHttp(
         response = await dio.get(url, queryParameters: p);
         break;
       case RequestType.post:
-        var data = isFromData ?? postDataIsFromData
+        var data = isFromData ?? Config.postDataIsFromData
             ? (p != null ? FormData.fromMap(p) : null)
             : p;
         response = await dio.post(url, data: data);
@@ -109,11 +77,11 @@ Future<void> requestHttp(
     succeed(response);
   } on DioError catch (e) {
 //    LogUtil.printLog("UnAuthorizedException");
-    if (e.error is UnAuthorizedException) {
-      if (notLogin != null) notLogin();
-    } else {
-      printLog("error");
-      if (failure != null) failure(e);
-    }
+//     if (e.error is UnAuthorizedException) {
+//       if (notLogin != null) notLogin();
+//     } else {
+    printLog("error");
+    if (failure != null) failure(e);
+    // }
   }
 }
