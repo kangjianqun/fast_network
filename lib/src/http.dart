@@ -10,7 +10,7 @@ typedef DioInit = void Function(Dio dio, String baseUrl);
 enum RequestType { get, post }
 
 typedef RequestSucceed = void Function(Response);
-typedef RequestFailure = void Function(DioError);
+typedef RequestFailure = void Function(Exception);
 
 class Http extends DioForNative {
   static Http? instance;
@@ -36,6 +36,8 @@ class Http extends DioForNative {
   }
 }
 
+/// disposeJson 自行处理json
+/// isFromData 是否表单/Json提交
 Future<void> requestHttp(
   RequestType type,
   String url, {
@@ -76,7 +78,7 @@ Future<void> requestHttp(
         break;
     }
     succeed(response);
-  } on DioError catch (e) {
+  } on Exception catch (e) {
 //    LogUtil.printLog("UnAuthorizedException");
 //     if (e.error is UnAuthorizedException) {
 //       if (notLogin != null) notLogin();
