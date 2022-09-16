@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:dio/native_imp.dart';
-import 'package:fast_net/fast_net.dart';
+import 'package:fast_network/fast_network.dart';
 import 'package:fast_utils/fast_utils.dart';
 
 import 'log.dart';
@@ -38,8 +38,8 @@ class Http extends DioForNative {
 
 Future<void> requestHttp(
   RequestType type,
-  Http dio,
   String url, {
+  Http? dio,
   Map<String, dynamic>? p,
   bool isShowDialog = false,
   bool dialogAllClear = false,
@@ -52,6 +52,7 @@ Future<void> requestHttp(
   RequestFailure? failure,
 }) async {
   Response response;
+  dio ??= Config.http;
   dio.options.extra.update(Config.keyShowDialog, (item) => isShowDialog,
       ifAbsent: () => isShowDialog);
   dio.options.extra.update(Config.keyDialogAllClear, (item) => dialogAllClear,
@@ -68,7 +69,7 @@ Future<void> requestHttp(
         response = await dio.get(url, queryParameters: p);
         break;
       case RequestType.post:
-        var data = isFromData ?? Config.postDataIsFromData
+        var data = (isFromData ?? Config.postDataIsFromData)
             ? (p != null ? FormData.fromMap(p) : null)
             : p;
         response = await dio.post(url, data: data);

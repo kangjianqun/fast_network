@@ -1,25 +1,22 @@
-library fast_net;
+library fast_network;
 
 import 'package:dio/dio.dart';
-import 'package:fast_net/src/log.dart';
 import 'package:fast_utils/fast_utils.dart';
 
-import 'fast_net.dart';
-import 'src/interceptor.dart';
+import 'fast_network.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'src/log.dart';
+
 export 'src/http.dart';
+export 'src/interceptor.dart';
 
 void initHttpRequest({
   ApiInterceptorOnRequest? onRequest,
   bool? extraSaveJson,
-  ShowToast? showToast,
-  bool isPrintLog = false,
 }) {
   if (onRequest != null) Config.onRequest = onRequest;
   if (extraSaveJson != null) ApiInterceptor.extraSaveJson = extraSaveJson;
-  if (showToast != null) Config.showToast = showToast;
-  Config.isDebugPrint = isPrintLog;
 }
 
 void initRespData({
@@ -32,12 +29,20 @@ void initRespData({
 
 /// [parseJson]必须是顶层函数
 void initHttp(
+  Http http, {
+  RequestHeaders? requestHeaders,
   BaseOptions? baseOptions,
   JsonDecodeCallback? parseJson,
   DioInit? dioInit,
-) {
+  bool isPrintLog = false,
+  ShowToast? showToast,
+}) {
+  Config.http = http;
+  Config.isDebugPrint = isPrintLog;
   if (baseOptions != null) Config.baseOptions = baseOptions;
+  if (requestHeaders != null) Config.headers = requestHeaders;
   if (parseJson != null) Config.jsonDecodeCallback = parseJson;
+  if (showToast != null) Config.showToast = showToast;
 }
 
 class Config {
@@ -58,6 +63,7 @@ class Config {
   static String keyResult = "key_result";
   static bool postDataIsFromData = true;
   static JsonDecodeCallback? jsonDecodeCallback;
+  static late Http http;
 
   static BaseOptions baseOptions =
       BaseOptions(connectTimeout: 1000 * 60, receiveTimeout: 1000 * 60);
@@ -80,6 +86,7 @@ class Config {
       var version = await getAppVersion();
       options.headers.putIfAbsent(versionKey, () => "v$version");
     }
+    if (headers != null) headers!(options, baseUrl);
 
     if (BoolUtil.parse(options.extra[keyShowDialog])) {
 //      printLog("showDialog");
@@ -92,6 +99,8 @@ class Config {
     printLog(options.uri);
     return options;
   };
+
+  static RequestHeaders? headers;
 
   static ShowToast showToast = (msg) {};
 

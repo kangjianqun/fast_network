@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../fast_net.dart';
+import '../fast_network.dart';
 
 const String _tag = "projectDebugLog";
 

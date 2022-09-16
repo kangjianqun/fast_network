@@ -1,7 +1,7 @@
-name: fast_net
+name: fast_network
 description: Network Encapsulation Library
-version: 1.0.0
-homepage: https://github.com/kangjianqun/fast_net
+version: 1.0.1
+homepage: https://github.com/kangjianqun/fast_network
 
 environment:
   sdk: ">=2.17.5 <3.0.0"
@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
 
   # https://pub.flutter-io.cn/packages/fast_utils
-  fast_utils: ^1.0.1
+  fast_utils: ^1.0.2
   # https://pub.flutter-io.cn/packages/package_info_plus
   package_info_plus: ^1.4.3
   # https://pub.flutter-io.cn/packages/dio

@@ -4,11 +4,13 @@ import 'package:dio/dio.dart';
 import 'package:fast_utils/fast_utils.dart';
 import 'package:flutter/material.dart';
 
-import '../fast_net.dart';
+import '../fast_network.dart';
 import 'log.dart';
 
 typedef ApiInterceptorOnRequest = Future<RequestOptions> Function(
     RequestOptions options, String baseUrl);
+
+typedef RequestHeaders = void Function(RequestOptions options, String baseUrl);
 
 typedef RespDataJson = Function(RespData data, Map<String, dynamic> json);
 
