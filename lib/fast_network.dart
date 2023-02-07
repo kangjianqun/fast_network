@@ -4,8 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:fast_utils/fast_utils.dart';
 
 import 'fast_network.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
 import 'src/log.dart';
 
 export 'src/http.dart';
@@ -73,19 +71,8 @@ class Config {
     dio.interceptors.add(ApiInterceptor(baseUrl));
   };
 
-  static Future<String> getAppVersion() async {
-    if (version != null) return version!;
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    version = packageInfo.version;
-    return version!;
-  }
-
   /// 配置[headers] 等
   static ApiInterceptorOnRequest onRequest = (options, String baseUrl) async {
-    if (isVersion) {
-      var version = await getAppVersion();
-      options.headers.putIfAbsent(versionKey, () => "v$version");
-    }
     if (headers != null) headers!(options, baseUrl);
 
     if (BoolUtil.parse(options.extra[keyShowDialog])) {
