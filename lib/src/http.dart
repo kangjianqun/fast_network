@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:dio/native_imp.dart';
+import 'package:dio/io.dart';
 import 'package:fast_network/fast_network.dart';
 import 'package:fast_utils/fast_utils.dart';
 
@@ -29,8 +29,8 @@ class Http extends DioForNative {
   /// 初始化 加入app通用处理
   _init(String baseUrl) {
     if (Config.jsonDecodeCallback != null) {
-      (transformer as DefaultTransformer).jsonDecodeCallback =
-          Config.jsonDecodeCallback;
+      (transformer as BackgroundTransformer).jsonDecodeCallback =
+          Config.jsonDecodeCallback!;
     }
     Config.dioInit(this, baseUrl);
   }

@@ -63,8 +63,10 @@ class Config {
   static JsonDecodeCallback? jsonDecodeCallback;
   static late Http http;
 
-  static BaseOptions baseOptions =
-      BaseOptions(connectTimeout: 1000 * 60, receiveTimeout: 1000 * 60);
+  static BaseOptions baseOptions = BaseOptions(
+    connectTimeout: const Duration(seconds: 60),
+    receiveTimeout: const Duration(seconds: 60),
+  );
 
   /// 初始化 Dio
   static DioInit dioInit = (Dio dio, String baseUrl) {
